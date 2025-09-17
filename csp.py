@@ -1,5 +1,6 @@
 from typing import Any
 from collections import deque
+import time
 
 
 class CSP:
@@ -22,6 +23,12 @@ class CSP:
         """
         self.variables = variables
         self.domains = domains
+
+
+        ## Init values for benchmark
+        self.backtrack_calls = 0
+        self.backtrack_failures = 0
+        self.backtrack_runtime = 0.0
 
         # Binary constraints as a dictionary mapping variable pairs to a set of value pairs.
         #
@@ -52,6 +59,8 @@ class CSP:
         bool
             False if a domain becomes empty, otherwise True
         """
+        start = time.time()
+
         def allowed_pairs(a: str, b: str) -> set:
             if (a, b) in self.binary_constraints:
                 return self.binary_constraints[(a, b)]
@@ -105,6 +114,9 @@ class CSP:
                     if Xk == Xj: 
                         continue
                     queue.append((Xk, Xi))  
+        
+        self.ac3_runtime = time.time() - start
+        self.domains_after_ac3 = {v: set(self.domains[v]) for v in self.variables}
         return True        
 
 
@@ -116,8 +128,6 @@ class CSP:
         None | dict[str, Any]
             A solution if any exists, otherwise None
         """
-
-
         def select_unassigned_variable(assignment): 
             unassigned = [v for v in self.variables if v not in assignment]
 
@@ -150,6 +160,8 @@ class CSP:
 
 
         def backtrack(assignment: dict[str, Any]):
+            self.backtrack_calls += 1
+
             if len(assignment) == len(self.variables): # every variable is has a assigment
                 return assignment
             
@@ -158,24 +170,17 @@ class CSP:
             for value in order_domain_values(var, assignment):
                 if is_consistent(var, value, assignment):
                     assignment[var] = value
-
-                    saved_domains = {v: set(self.domains[v]) for v in self.variables}
-                    self.domains[var] = {value}
-
-                    if self.ac_3():
-                        inferences = True  
-                    else:
-                        inferences = False
-
-                    if inferences:
-                        result = backtrack(assignment)
-                        if result is not None:
-                            return result
-
-                    self.domains = saved_domains
+                    result = backtrack(assignment)
+                    if result is not None:
+                        return result
                     del assignment[var]
+
+            self.backtrack_failures +=1
             return None       
-        return backtrack({})
+        start = time.time()
+        result = backtrack({})
+        self.backtrack_runtime = time.time() - start
+        return result
 
 
 def alldiff(variables: list[str]) -> list[tuple[str, str]]:

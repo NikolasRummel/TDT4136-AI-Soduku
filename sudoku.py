@@ -2,6 +2,7 @@
 # The CSP.ac_3() and CSP.backtrack() methods need to be implemented
 
 from csp import CSP, alldiff
+import time
 
 
 def print_solution(solution):
@@ -20,7 +21,7 @@ def print_solution(solution):
 
 
 # Choose Sudoku problem
-grid = open('sudoku_easy.txt').read().split()
+grid = open('sudoku_hard.txt').read().split()
 
 width = 9
 box_width = 3
@@ -54,9 +55,6 @@ csp = CSP(
     edges=edges,
 )
 
-print(csp.ac_3())
-
-print_solution(csp.backtracking_search())
 
 # Expected output after implementing csp.ac_3() and csp.backtracking_search():
 # True
@@ -71,3 +69,36 @@ print_solution(csp.backtracking_search())
 # 4 5 3 | 7 2 9 | 6 1 8
 # 8 6 2 | 3 1 4 | 7 9 5
 # 1 9 7 | 6 5 8 | 2 4 3
+def print_domains_as_grid(domains, width=9, box_width=3):
+    for row in range(width):
+        for col in range(width):
+            key = f'X{row+1}{col+1}'
+            cell = ''.join(str(x) for x in sorted(domains[key]))
+            print(f"{cell:9}", end=' ')
+            if (col + 1) % box_width == 0 and col < width - 1:
+                print('|', end=' ')
+        print()
+        if (row + 1) % box_width == 0 and row < width - 1:
+            print('-' * (width * 9 + 6))  
+
+
+start_total = time.time()
+ac3_result = csp.ac_3()
+
+print("AC-3 result:", ac3_result)
+print("\nDomains after AC-3:")
+print_domains_as_grid(csp.domains_after_ac3)
+
+
+# --- Backtracking + timing ---
+solution = csp.backtracking_search()
+backtrack_runtime = csp.backtrack_runtime
+
+print_solution(solution)
+
+# --- Benchmarks ---
+print("--- Benchmarks ---")
+print(f"Backtracking calls: {csp.backtrack_calls}")
+print(f"Backtracking failures: {csp.backtrack_failures}")
+print(f"Backtracking runtime: {backtrack_runtime:.6f} seconds")
+print(f"Total runtime (AC-3 + Backtracking): {time.time() - start_total:.6f} seconds")
