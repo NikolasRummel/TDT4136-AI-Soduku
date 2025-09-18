@@ -21,7 +21,9 @@ def print_solution(solution):
 
 
 # Choose Sudoku problem
-grid = open('sudoku_hard.txt').read().split()
+file = "sudoku_hard.txt"
+
+grid = open(file).read().split()
 
 width = 9
 box_width = 3
@@ -85,19 +87,18 @@ def print_domains_as_grid(domains, width=9, box_width=3):
 start_total = time.time()
 ac3_result = csp.ac_3()
 
+print("Running Soduku:" + file)
 print("AC-3 result:", ac3_result)
-print("\nDomains after AC-3:")
+print("Domains after AC-3:")
 print_domains_as_grid(csp.domains_after_ac3)
 
-
-# --- Backtracking + timing ---
 solution = csp.backtracking_search()
 backtrack_runtime = csp.backtrack_runtime
 
+print("Backtrack result:")
 print_solution(solution)
 
-# --- Benchmarks ---
-print("--- Benchmarks ---")
+print("Benchmark result:")
 print(f"Backtracking calls: {csp.backtrack_calls}")
 print(f"Backtracking failures: {csp.backtrack_failures}")
 print(f"Backtracking runtime: {backtrack_runtime:.6f} seconds")
