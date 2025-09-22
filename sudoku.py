@@ -21,7 +21,7 @@ def print_solution(solution):
 
 
 # Choose Sudoku problem
-file = "sudoku_hard.txt"
+file = "sudoku_easy.txt"
 
 grid = open(file).read().split()
 
@@ -56,8 +56,6 @@ csp = CSP(
     domains=domains,
     edges=edges,
 )
-
-
 # Expected output after implementing csp.ac_3() and csp.backtracking_search():
 # True
 # 7 8 4 | 9 3 2 | 1 5 6
@@ -73,15 +71,18 @@ csp = CSP(
 # 1 9 7 | 6 5 8 | 2 4 3
 def print_domains_as_grid(domains, width=9, box_width=3):
     for row in range(width):
+        row_values = []
         for col in range(width):
             key = f'X{row+1}{col+1}'
+            # join numbers into a compact string like "3568"
             cell = ''.join(str(x) for x in sorted(domains[key]))
-            print(f"{cell:9}", end=' ')
+            row_values.append(f"{cell:<5}")  # align with small padding
             if (col + 1) % box_width == 0 and col < width - 1:
-                print('|', end=' ')
-        print()
+                row_values.append("| ")
+        print(''.join(row_values).rstrip())
         if (row + 1) % box_width == 0 and row < width - 1:
-            print('-' * (width * 9 + 6))  
+            print("-" * (width * 5 + (box_width - 1) * 2))
+
 
 
 start_total = time.time()

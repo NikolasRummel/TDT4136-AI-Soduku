@@ -62,6 +62,14 @@ class CSP:
         start = time.time()
 
         def allowed_pairs(a: str, b: str) -> set:
+            """Return all allowed value pairs from the binary_constraints dictionary. 
+            Used for checking in the revise function of AC-3 if a value allows to satisfy the constraint between a and b
+
+            Returns
+            -------
+            set of tuples
+                Each tuple (a, b) represents a pair of values that satisfies the constraint.
+            """
             if (a, b) in self.binary_constraints:
                 return self.binary_constraints[(a, b)]
             if (b, a) in self.binary_constraints:
@@ -69,6 +77,12 @@ class CSP:
             return set()
 
         def revise(Xi, Xj): 
+            """Returns true if the domain of Xi was revised.
+            Returns
+            -------
+            bool
+                 True if the domain of Xi was revised, otherwise False
+            """
             revised = False
             Di = list(self.domains[Xi])
             for x in Di:
@@ -87,6 +101,15 @@ class CSP:
 
 
         def neighbors(X: str) -> set:
+            """Returns a set of neghbouring nodes of X.
+            Uses the binary_constraints dictonary to get all neghbouring nodes.
+            From the constraints it might be either the first or the second node in the touple. 
+            If one node is added multiple times, it doesnt matter since we are using a set.
+            Returns
+            -------
+            set
+                 Set of all neihbouring nodes
+            """
             neighbors = set()
             for (a, b) in list(self.binary_constraints.keys()):
                 if a == X:
@@ -107,14 +130,16 @@ class CSP:
             if revise(Xi, Xj):
                 Dj = list(self.domains[Xj])
 
-                if len(Dj) == 0:
+                if len(Dj) == 0: # If size of Domains for j is empty we have some inconsistency and return false
                     return False
                 
                 for Xk in neighbors(Xi):
+                    # Following the pseudocode we have to remove Xj from neighbours
                     if Xk == Xj: 
-                        continue
+                        continue # So we skip the current iteration here to "remove" Xj from the neighbours
                     queue.append((Xk, Xi))  
-        
+         
+        # Tracking runtime
         self.ac3_runtime = time.time() - start
         self.domains_after_ac3 = {v: set(self.domains[v]) for v in self.variables}
         return True        
@@ -129,12 +154,22 @@ class CSP:
             A solution if any exists, otherwise None
         """
         def select_unassigned_variable(assignment): 
+            """Selects the next variable from the assignment
+            In the exercise its stated that we can choose any variable.
+            In this implementation I thought a usefull but still easy solution is to choose by the smallest domain. 
+            
+            Returns
+            -------
+            bool
+                 Returns next unassigned variable based on the smallest domain
+            """
             unassigned = [v for v in self.variables if v not in assignment]
 
             # Choosing by smallest domain:
             best = unassigned[0]
             min_domain = len(self.domains[best])
 
+            # Loops over all unassigned and checks for each if its has a smaller domain
             for curr in unassigned:
                 curr_domain = len(self.domains[curr])
 
@@ -149,6 +184,12 @@ class CSP:
 
 
         def is_consistent(var, value, assignment):
+            """Checks if var/ values are consistent by checking if their appear in the binary_constraints
+            Returns
+            -------
+            bool
+                 True if consistent, False otherwise
+            """
             for other_var, other_val in assignment.items():
                 if (var, other_var) in self.binary_constraints:
                     if (value, other_val) not in self.binary_constraints[(var, other_var)]:
@@ -160,9 +201,19 @@ class CSP:
 
 
         def backtrack(assignment: dict[str, Any]):
+            """DFS based algorithm to find an assigment to the csp. 
+            If some value choice fails, the values are withdrawn and it jumps back and start again with another value.
+
+            Returns
+            -------
+            dict[str, Any]
+                 Assignment of the CSP if found, otherwise None 
+            
+            """
             self.backtrack_calls += 1
 
-            if len(assignment) == len(self.variables): # every variable is has a assigment
+            # If assignment is complete, return solution
+            if len(assignment) == len(self.variables): 
                 return assignment
             
             var = select_unassigned_variable(assignment)
@@ -171,14 +222,56 @@ class CSP:
                 if is_consistent(var, value, assignment):
                     assignment[var] = value
                     result = backtrack(assignment)
+
                     if result is not None:
                         return result
                     del assignment[var]
 
             self.backtrack_failures +=1
-            return None       
+            return None  
+        
+        def backtrack_with_ac3_inference(assignment: dict[str, Any]):
+            """DFS based algorithm to find an assigment to the csp. 
+            If some value choice fails, the values are withdrawn and it jumps back and start again with another value.
+
+            Returns
+            -------
+            dict[str, Any]
+                 Assignment of the CSP if found, otherwise None 
+            
+            """
+            self.backtrack_calls += 1
+
+            # If assignment is complete, return solution
+            if len(assignment) == len(self.variables):
+                return assignment
+
+            var = select_unassigned_variable(assignment)
+
+            for value in order_domain_values(var, assignment):
+                if is_consistent(var, value, assignment):
+                    assignment[var] = value
+
+                    # Save current domains to restore later
+                    saved_domains = {v: set(self.domains[v]) for v in self.variables}
+                    self.domains[var] = {value}  # fix the current variable
+
+                    # AC-3 as inference
+                    if self.ac_3():
+                        result = backtrack_with_ac3_inference(assignment)
+                        if result is not None:
+                            return result
+
+                    # Restore domains and undo assignment
+                    self.domains = saved_domains
+                    del assignment[var]
+
+            # No value worked, count failure
+            self.backtrack_failures += 1
+            return None
+     
         start = time.time()
-        result = backtrack({})
+        result = backtrack_with_ac3_inference({})
         self.backtrack_runtime = time.time() - start
         return result
 
