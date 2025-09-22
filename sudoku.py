@@ -74,9 +74,8 @@ def print_domains_as_grid(domains, width=9, box_width=3):
         row_values = []
         for col in range(width):
             key = f'X{row+1}{col+1}'
-            # join numbers into a compact string like "3568"
             cell = ''.join(str(x) for x in sorted(domains[key]))
-            row_values.append(f"{cell:<5}")  # align with small padding
+            row_values.append(f"{cell:<5}") 
             if (col + 1) % box_width == 0 and col < width - 1:
                 row_values.append("| ")
         print(''.join(row_values).rstrip())
