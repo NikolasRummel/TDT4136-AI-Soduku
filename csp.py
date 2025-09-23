@@ -271,7 +271,7 @@ class CSP:
             return None
      
         start = time.time()
-        result = backtrack_with_ac3_inference({})
+        result = backtrack({})
         self.backtrack_runtime = time.time() - start
         return result
 
